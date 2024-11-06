@@ -7,8 +7,7 @@ def create_topic1_mapping(client: HazelcastClient) -> None:
         CREATE OR REPLACE MAPPING "Topic-A" (
                 id VARCHAR,
                 event_time TIMESTAMP WITH TIME ZONE,
-                dataField1 VARCHAR,
-                dataField2 VARCHAR
+                dataA VARCHAR
             ) 
             TYPE Kafka
             OPTIONS (
@@ -36,8 +35,7 @@ def create_topic2_mapping(client: HazelcastClient) -> None:
         CREATE OR REPLACE MAPPING "Topic-B" (
                 id VARCHAR,
                 event_time TIMESTAMP WITH TIME ZONE,
-                dataField1 VARCHAR,
-                dataField2 VARCHAR
+                dataB VARCHAR
             ) 
             TYPE Kafka
             OPTIONS (
@@ -65,8 +63,7 @@ def create_topic3_mapping(client: HazelcastClient) -> None:
         CREATE OR REPLACE MAPPING "Topic-C" (
                 id VARCHAR,
                 event_time TIMESTAMP WITH TIME ZONE,
-                dataField1 VARCHAR,
-                dataField2 VARCHAR
+                dataC VARCHAR
             ) 
             TYPE Kafka
             OPTIONS (
@@ -98,36 +95,22 @@ create_topic1_mapping(client)
 create_topic2_mapping(client)
 create_topic3_mapping(client)
 
+# Note: INNER, LEFT, or RIGHT JOIN all work here; FULL (outer) join is not supported
+query = """
+   SELECT a.id,
+     a.event_time,
+     a.dataA,
+     b.dataB,
+     c.dataC
+   FROM topica_ordered a
+     LEFT JOIN topicb_ordered b ON a.id = b.id 
+     LEFT JOIN topicc_ordered c on a.id = c.id 
+     WHERE a.event_time BETWEEN b.event_time - INTERVAL '30' SECONDS
+                            AND b.event_time + INTERVAL '30' SECONDS
+       AND a.event_time BETWEEN c.event_time - INTERVAL '30' SECONDS
+                            AND c.event_time + INTERVAL '30' SECONDS
+"""
 
-#result = sqlservice.execute('SELECT * from "Topic-A"').result()
-# SELECT __key, event_time, ANumber, AString FROM "Topic-A"
-
-# SELECT * FROM topica_ordered
-# query = """
-#    SELECT a.id,
-#      a.dataField1,
-#      b.dataField2,
-#      c.dataField1
-#    FROM topica_ordered a
-#      JOIN topicb_ordered b ON a.id = b.id
-#      JOIN topicc_ordered c ON a.id = c.id
-# """
-
-# query = """
-#    SELECT a.id,
-#      a.dataField1,
-#      b.dataField2
-#    FROM topica_ordered a
-#      JOIN topicb_ordered b ON a.id = b.id WHERE a.event_time BETWEEN b.event_time - INTERVAL '30' SECONDS
-#                                                                  AND b.event_time + INTERVAL '30' SECONDS
-# """
-
-query = 'SELECT id, event_time FROM "Topic-A" LIMIT 10'
-result = sqlservice.execute(query).result()
-for row in result:
-    print(row)
-
-query = 'SELECT id, event_time FROM "Topic-B" LIMIT 10'
 result = sqlservice.execute(query).result()
 for row in result:
     print(row)
